@@ -2,6 +2,9 @@
 {
   init: function(elevators, floors) {
     var self = this;
+    window.up_buttons_pressed = [];
+    window.down_buttons_pressed = [];
+    window.elevators = elevators;
 
     for(j=0; j < elevators.length ; j++){
       elevators[j].number = j;
@@ -12,34 +15,48 @@
 
       elevators[j].on("floor_button_pressed", function(floorNum) {
         this.goToFloor(floorNum);
-      })
+      });
+
+      elevators[j].on("passing_floor", function(floorNum, direction) {
+      });
     }
 
     floors[0].on("up_button_pressed", function(){
-      self.nearest_elevator(elevators, this).goToFloor(0);
+      self.up_button_pressed(this.floorNum());
     })
     for(i=1; i<=6; i++){
       floors[i].on("up_button_pressed", function(){
-        self.nearest_elevator(elevators, this).goToFloor(i);
+        self.up_button_pressed(this.floorNum());
       })
       floors[i].on("down_button_pressed", function(){
-        self.nearest_elevator(elevators, this).goToFloor(i);
+        self.down_button_pressed(this.floorNum());
       })
     }
     floors[7].on("down_button_pressed", function(){
-      self.nearest_elevator(elevators, this).goToFloor(7);
+      self.down_button_pressed(this.floorNum());
     })
   },
+
+  down_button_pressed: function(floor_num) {
+    window.down_buttons_pressed.push(floor_num);
+    this.nearest_elevator(window.elevators, floor_num).goToFloor(floor_num);
+  },
+
+  up_button_pressed: function(floor_num) {
+    window.up_buttons_pressed.push(floor_num);
+    this.nearest_elevator(window.elevators, floor_num).goToFloor(floor_num);
+  },
+
   update: function(dt, elevators, floors) {
       // We normally don't need to do anything here
   },
 
-  nearest_elevator: function(elevators, current_floor){
+  nearest_elevator: function(elevators, current_floor_num){
     var nearest_elevator = null
     var nearest_elevator_distance = 999
 
     for(var x=0; x < elevators.length; x++){
-      var distance = Math.abs(elevators[x].currentFloor() - current_floor.floorNum());
+      var distance = Math.abs(elevators[x].currentFloor() - current_floor_num);
       if(distance < nearest_elevator_distance){
         nearest_elevator = elevators[x];
         nearest_elevator_distance = distance
