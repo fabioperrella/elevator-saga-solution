@@ -1,4 +1,3 @@
-//http://play.elevatorsaga.com/#challenge=4
 {
   init: function(elevators, floors) {
     var self = this;
@@ -19,31 +18,52 @@
 
       elevators[j].on("passing_floor", function(floorNum, direction) {
       });
+
+      elevators[j].on("stopped_at_floor", function(floorNum) {
+        var index = window.down_buttons_pressed.indexOf(floor_num)
+        if(index >= 0){
+          window.down_buttons_pressed.splice(index, 1);
+          console.log("removed floor " + floorNum + " from down_buttons_pressed")
+        }
+
+        index = window.up_buttons_pressed.indexOf(floor_num)
+        if(index >= 0){
+          window.up_buttons_pressed.splice(index, 1);
+          console.log("removed floor " + floorNum + " from up_buttons_pressed")
+        }
+      })
     }
 
     floors[0].on("up_button_pressed", function(){
       self.up_button_pressed(this.floorNum());
-    })
+    });
+
     for(i=1; i<=6; i++){
       floors[i].on("up_button_pressed", function(){
         self.up_button_pressed(this.floorNum());
-      })
+      });
+
       floors[i].on("down_button_pressed", function(){
         self.down_button_pressed(this.floorNum());
-      })
+      });
     }
+
     floors[7].on("down_button_pressed", function(){
       self.down_button_pressed(this.floorNum());
-    })
+    });
   },
 
   down_button_pressed: function(floor_num) {
-    window.down_buttons_pressed.push(floor_num);
+    if(window.down_buttons_pressed.indexOf(floor_num) == -1){
+      window.down_buttons_pressed.push(floor_num);
+    }
     this.nearest_elevator(window.elevators, floor_num).goToFloor(floor_num);
   },
 
   up_button_pressed: function(floor_num) {
-    window.up_buttons_pressed.push(floor_num);
+    if(window.up_buttons_pressed.indexOf(floor_num) == -1){
+      window.up_buttons_pressed.push(floor_num);
+    }
     this.nearest_elevator(window.elevators, floor_num).goToFloor(floor_num);
   },
 
