@@ -17,20 +17,19 @@
       });
 
       elevators[j].on("passing_floor", function(floorNum, direction) {
+        // if(direction == 'up' && window.up_buttons_pressed.indexOf(floorNum) != -1){
+        //   this.stop()
+        //   console.log("elevator (" + this.number + ") stopped passing floor up")
+        // }
+
+        // if(direction == 'down' && window.down_buttons_pressed.indexOf(floorNum) != -1){
+        //   this.stop()
+        //   console.log("elevator (" + this.number + ") stopped passing floor down")
+        // }
       });
 
       elevators[j].on("stopped_at_floor", function(floorNum) {
-        var index = window.down_buttons_pressed.indexOf(floor_num)
-        if(index >= 0){
-          window.down_buttons_pressed.splice(index, 1);
-          console.log("removed floor " + floorNum + " from down_buttons_pressed")
-        }
-
-        index = window.up_buttons_pressed.indexOf(floor_num)
-        if(index >= 0){
-          window.up_buttons_pressed.splice(index, 1);
-          console.log("removed floor " + floorNum + " from up_buttons_pressed")
-        }
+        self.goToNextFloor(this)
       })
     }
 
@@ -51,6 +50,26 @@
     floors[7].on("down_button_pressed", function(){
       self.down_button_pressed(this.floorNum());
     });
+  },
+
+  goToNextFloor: function(elevator){
+    console.log("elevator (" + elevator.number + ") goToNextFloor: pressed floors: " + elevator.getPressedFloors())
+    var next_floor
+
+    if(elevator.getPressedFloors().length > 0){
+      next_floor = elevator.getPressedFloors().pop()
+    }
+    else if(window.down_buttons_pressed.length > 0){
+      next_floor = window.down_buttons_pressed.pop()
+    }
+    else if(window.up_buttons_pressed.length > 0){
+      next_floor = window.up_buttons_pressed.pop()
+    }
+
+    if(next_floor != undefined){
+      console.log("going to floor " + next_floor)
+      elevator.goToFloor(next_floor)
+    }
   },
 
   down_button_pressed: function(floor_num) {
