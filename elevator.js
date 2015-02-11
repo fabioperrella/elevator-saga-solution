@@ -31,19 +31,8 @@
       });
 
       elevators[j].on("stopped_at_floor", function(floorNum) {
-        var index
-
-        index = window.down_buttons_pressed.indexOf(floorNum)
-        if(index != -1){
-          console.log("removed floor " + floorNum + " from down_buttons_pressed")
-          window.down_buttons_pressed.splice(index, 1);
-        }
-
-        index = window.up_buttons_pressed.indexOf(floorNum)
-        if(index != -1){
-          console.log("removed floor " + floorNum + " from up_buttons_pressed")
-          window.up_buttons_pressed.splice(index, 1);
-        }
+        self.remove_flor_from_queue(floorNum, window.down_buttons_pressed)
+        self.remove_flor_from_queue(floorNum, window.up_buttons_pressed)
 
         self.goToNextFloor(this)
       })
@@ -72,19 +61,24 @@
     console.log("elevator (" + elevator.number + ") goToNextFloor: pressed floors: " + elevator.getPressedFloors())
     var next_floor
 
-    if(elevator.getPressedFloors().length > 0){
-      next_floor = elevator.getPressedFloors().pop()
-    }
-    else if(window.down_buttons_pressed.length > 0){
-      next_floor = window.down_buttons_pressed.pop()
-    }
-    else if(window.up_buttons_pressed.length > 0){
-      next_floor = window.up_buttons_pressed.pop()
-    }
+    var all_floor_pressed = elevator.getPressedFloors().concat(window.down_buttons_pressed).concat(window.up_buttons_pressed)
+    debugger
+    var nearest_flor = self.nearest_floor(all_floor_pressed, elevator.currentFloor())
 
-    if(next_floor != undefined){
-      console.log("goToNextFloor going to floor " + next_floor)
-      elevator.goToFloor(next_floor)
+    self.remove_flor_from_queue(nearest_flor, window.down_buttons_pressed)
+    self.remove_flor_from_queue(nearest_flor, window.up_buttons_pressed)
+
+    if(nearest_flor != undefined){
+      console.log("goToNextFloor going to floor " + nearest_flor)
+      elevator.goToFloor(nearest_flor)
+    }
+  },
+
+  remove_flor_from_queue: function(floor_num, queue){
+    var index
+    index = queue.indexOf(floor_num)
+    if(index != -1){
+      queue.splice(index, 1)
     }
   },
 
@@ -108,6 +102,22 @@
 
   update: function(dt, elevators, floors) {
       // We normally don't need to do anything here
+  },
+
+  nearest_floor: function(queued_flors, current_floor_num){
+    var nearest_floor = null
+    var nearest_flor_distance = 999
+
+    for(var x=0; x < queued_flors.length; x++){
+      var distance = Math.abs(current_floor_num - queued_flors[x]);
+      if(distance < nearest_flor_distance){
+        nearest_floor = queued_flors[x];
+        nearest_flor_distance = distance
+      }
+    }
+
+    console.log("nearest flor: " + nearest_floor + ", distance: " + nearest_flor_distance);
+    return nearest_floor;
   },
 
   nearest_elevator: function(elevators, current_floor_num){
