@@ -10,31 +10,22 @@
       elevators[j].number = j;
 
       elevators[j].on("idle", function() {
-
+        console.log("elevator (" + this.number + ") idle, current floor: " + this.currentFloor())
+        self.goToNextFloor(this)
       });
 
       elevators[j].on("floor_button_pressed", function(floorNum) {
-        console.log("elevator (" + this.number + ") floor_button_pressed, going to floor " + floorNum)
-        this.goToFloor(floorNum);
+        console.log("elevator (" + this.number + ") floor_button_pressed: " + floorNum)
       });
 
       elevators[j].on("passing_floor", function(floorNum, direction) {
-        // if(direction == 'up' && window.up_buttons_pressed.indexOf(floorNum) != -1){
-        //   this.stop()
-        //   console.log("elevator (" + this.number + ") stopped passing floor up")
-        // }
-
-        // if(direction == 'down' && window.down_buttons_pressed.indexOf(floorNum) != -1){
-        //   this.stop()
-        //   console.log("elevator (" + this.number + ") stopped passing floor down")
-        // }
       });
 
       elevators[j].on("stopped_at_floor", function(floorNum) {
         self.remove_flor_from_queue(floorNum, window.down_buttons_pressed)
         self.remove_flor_from_queue(floorNum, window.up_buttons_pressed)
 
-        self.goToNextFloor(this)
+        this.destinationQueue = []
       })
     }
 
@@ -62,14 +53,13 @@
     var next_floor
 
     var all_floor_pressed = elevator.getPressedFloors().concat(window.down_buttons_pressed).concat(window.up_buttons_pressed)
-    debugger
-    var nearest_flor = self.nearest_floor(all_floor_pressed, elevator.currentFloor())
+    var nearest_flor = this.get_nearest_floor(all_floor_pressed, elevator)
 
-    self.remove_flor_from_queue(nearest_flor, window.down_buttons_pressed)
-    self.remove_flor_from_queue(nearest_flor, window.up_buttons_pressed)
+    this.remove_flor_from_queue(nearest_flor, window.down_buttons_pressed)
+    this.remove_flor_from_queue(nearest_flor, window.up_buttons_pressed)
 
     if(nearest_flor != undefined){
-      console.log("goToNextFloor going to floor " + nearest_flor)
+      console.log("elevator (" + elevator.number + ") goToNextFloor going to floor " + nearest_flor)
       elevator.goToFloor(nearest_flor)
     }
   },
@@ -86,37 +76,35 @@
     if(window.down_buttons_pressed.indexOf(floor_num) == -1){
       window.down_buttons_pressed.push(floor_num);
     }
-    var elevator = this.nearest_elevator(window.elevators, floor_num)
-    console.log("elevator (" + elevator.number + ") nearest, going to floor " + floor_num)
-    elevator.goToFloor(floor_num);
   },
 
   up_button_pressed: function(floor_num) {
     if(window.up_buttons_pressed.indexOf(floor_num) == -1){
       window.up_buttons_pressed.push(floor_num);
     }
-    var elevator = this.nearest_elevator(window.elevators, floor_num)
-    console.log("elevator (" + elevator.number + ") nearest, going to floor " + floor_num)
-    elevator.goToFloor(floor_num);
   },
 
   update: function(dt, elevators, floors) {
       // We normally don't need to do anything here
   },
 
-  nearest_floor: function(queued_flors, current_floor_num){
+  get_nearest_floor: function(queued_flors, elevator){
+    var current_floor_num = elevator.currentFloor()
     var nearest_floor = null
     var nearest_flor_distance = 999
 
     for(var x=0; x < queued_flors.length; x++){
       var distance = Math.abs(current_floor_num - queued_flors[x]);
+      if(distance == 0){
+        continue
+      }
       if(distance < nearest_flor_distance){
         nearest_floor = queued_flors[x];
         nearest_flor_distance = distance
       }
     }
 
-    console.log("nearest flor: " + nearest_floor + ", distance: " + nearest_flor_distance);
+    console.log("elevator(" + elevator.number + ") nearest flor: " + nearest_floor + ", distance: " + nearest_flor_distance + ", currentFloor: " + current_floor_num + ", queued_flors: " + queued_flors);
     return nearest_floor;
   },
 
