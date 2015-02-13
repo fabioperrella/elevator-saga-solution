@@ -10,6 +10,7 @@
       elevators[j].number = j;
 
       elevators[j].on("idle", function() {
+        var num = this.number
         console.log("elevator (" + this.number + ") idle, current floor: " + this.currentFloor())
         self.goToNextFloor(this)
       });
@@ -22,8 +23,8 @@
       });
 
       elevators[j].on("stopped_at_floor", function(floorNum) {
-        self.remove_flor_from_queue(floorNum, window.down_buttons_pressed)
-        self.remove_flor_from_queue(floorNum, window.up_buttons_pressed)
+        self.remove_floor_from_queue(floorNum, window.down_buttons_pressed, 'stopped_down')
+        self.remove_floor_from_queue(floorNum, window.up_buttons_pressed, 'stopped_up')
 
         this.destinationQueue = []
       })
@@ -49,22 +50,32 @@
   },
 
   goToNextFloor: function(elevator){
-    console.log("elevator (" + elevator.number + ") goToNextFloor: pressed floors: " + elevator.getPressedFloors())
-    var next_floor
-
     var all_floor_pressed = elevator.getPressedFloors().concat(window.down_buttons_pressed).concat(window.up_buttons_pressed)
     var nearest_flor = this.get_nearest_floor(all_floor_pressed, elevator)
+    if(nearest_flor==null) {
+      console.log("elevator (" + elevator.number + ") nowhere to go")
+      return
+    }
 
-    this.remove_flor_from_queue(nearest_flor, window.down_buttons_pressed)
-    this.remove_flor_from_queue(nearest_flor, window.up_buttons_pressed)
+    console.log("elevator (" + elevator.number + ") goToNextFloor: all floors pressed: " + all_floor_pressed + ", nearest_flor: " + nearest_flor)
 
     if(nearest_flor != undefined){
+      if(elevator.getPressedFloors().indexOf(nearest_flor) == -1){
+        for(var r=0; r < elevators.length; r++){
+          if(elevators[r].destinationQueue.indexOf(nearest_flor) != -1){
+            console.log("elevator (" + r + ") already going to floor " + nearest_flor + ", so I will wait")
+            return
+          }
+        }
+      }
       console.log("elevator (" + elevator.number + ") goToNextFloor going to floor " + nearest_flor)
       elevator.goToFloor(nearest_flor)
     }
   },
 
-  remove_flor_from_queue: function(floor_num, queue){
+  remove_floor_from_queue: function(floor_num, queue, queue_name){
+    if(floor_num == null) return
+
     var index
     index = queue.indexOf(floor_num)
     if(index != -1){
@@ -76,11 +87,23 @@
     if(window.down_buttons_pressed.indexOf(floor_num) == -1){
       window.down_buttons_pressed.push(floor_num);
     }
+    this.wake_up_idle_elevators(floor_num)
   },
 
   up_button_pressed: function(floor_num) {
     if(window.up_buttons_pressed.indexOf(floor_num) == -1){
       window.up_buttons_pressed.push(floor_num);
+    }
+    this.wake_up_idle_elevators(floor_num)
+  },
+
+  wake_up_idle_elevators: function(floor_num){
+    console.log("wake_up_idle_elevators from floor " + floor_num);
+    for(var w=0; w < elevators.length ; w++){
+      if(elevators[w].getPressedFloors().length == 0){
+        console.log("elevator (" + elevators[w].number + ") is idle, going to next floor")
+        this.goToNextFloor(elevators[w])
+      }
     }
   },
 
@@ -104,7 +127,7 @@
       }
     }
 
-    console.log("elevator(" + elevator.number + ") nearest flor: " + nearest_floor + ", distance: " + nearest_flor_distance + ", currentFloor: " + current_floor_num + ", queued_flors: " + queued_flors);
+    // console.log("elevator(" + elevator.number + ") nearest flor: " + nearest_floor + ", distance: " + nearest_flor_distance + ", currentFloor: " + current_floor_num + ", queued_flors: " + queued_flors);
     return nearest_floor;
   },
 
